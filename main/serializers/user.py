@@ -1,26 +1,7 @@
 # serializers.py
 
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
-from django.contrib.auth import authenticate  # Ensure this is imported
-
-User = get_user_model()
-
-class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
-
-    class Meta:
-        model = User
-        fields = ['email', 'name', 'password']
-
-    def create(self, validated_data):
-        user = User(
-            email=validated_data['email'],
-            name=validated_data['name'],
-        )
-        user.set_password(validated_data['password'])  # Hash the password
-        user.save()
-        return user
+from ..models.user import Member
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -29,16 +10,20 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, attrs):
         email = attrs.get('email')
         password = attrs.get('password')
-        
-        # Authenticate the user
-        user = authenticate(email=email, password=password)  # This line needs to be correct
+        try:
+            user = Member.objects.get(email=email)
+            if not user.is_active:
+                raise serializers.ValidationError(f"Your account is not active. Please come from {user.deadline_from} to {user.deadline_to}")
+            if not user.check_password(password):
+                raise serializers.ValidationError(("Invalid credentials"))
+        except Member.DoesNotExist:
+            raise serializers.ValidationError(("Invalid credentials"))
 
-        if user is None:
-            raise serializers.ValidationError("Invalid credentials")
-
-        return user
-
+        attrs['user'] = user
+        return attrs
+    
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ['email', 'name']
+        model = Member  # Change to your custom user model
+        fields = '__all__'
+        

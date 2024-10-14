@@ -42,9 +42,19 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 
+# REST_FRAMEWORK = {
+#     'DEFAULT_AUTHENTICATION_CLASSES': (
+#         'rest_framework_simplejwt.authentication.JWTAuthentication',
+#     ),
+    
+# }
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'main.authentication.CustomJWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'main.permissions.IsAuthenticatedCustom',
     ),
 }
 
@@ -53,10 +63,17 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 from datetime import timedelta
+import os
+CUSTOM_JWT_SECRET = os.getenv('CUSTOM_JWT_SECRET', 'your_custom_secret_here')
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': CUSTOM_JWT_SECRET, 
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
 }
 
 
@@ -67,7 +84,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware'
 ]
 
 ROOT_URLCONF = 'project.urls'
@@ -102,11 +119,14 @@ DATABASES = {
         'PASSWORD': '',
         'HOST': 'localhost',
         'PORT': '3306',  # or '3306' for MySQL
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+        },
     }
 }
 
 
-AUTH_USER_MODEL = 'main.Member'
+# AUTH_USER_MODEL = 'main.Member'
 
 
 # Password validation
